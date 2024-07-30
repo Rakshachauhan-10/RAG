@@ -1,6 +1,5 @@
 # from langchain_community.chat_models import ChatCohere
-from langchain_cohere import ChatCohere
-from langchain_openai import ChatOpenAI
+import google.generativeai as genai
 from langchain.chains import RetrievalQA
 from langchain_community.vectorstores import FAISS
 from langchain_cohere import CohereEmbeddings
@@ -16,6 +15,8 @@ from io import StringIO
 import re
 # import wget
 import tarfile
+
+load_dotenv()
 # os.environ['JAVA_HOME'] = './jdk'
 
 
@@ -36,16 +37,47 @@ import tarfile
 
 st.set_page_config("Report Funds","🤖")
 
-load_dotenv()
-
 # API Keys
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+# OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 COHERE_API_KEY = os.getenv('COHERE_API_KEY')
 
+# Configure the client library by providing your API key.
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 
+generation_config = {
+  "temperature": 0.9,
+  "top_p": 1,
+  "top_k": 1,
+  "max_output_tokens": 2048,
+}
+
+safety_settings = [
+  {
+    "category": "HARM_CATEGORY_HARASSMENT",
+    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+  },
+  {
+    "category": "HARM_CATEGORY_HATE_SPEECH",
+    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+  },
+  {
+    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+  },
+  {
+    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+  }
+]
 
 
+# Call the model and print the response.
+gemini =  genai.GenerativeModel(model_name="gemini-pro",
+                              generation_config=generation_config,
+                              safety_settings=safety_settings)
+
+llm = gemini.start_chat()
 
 #Retrieve Schemes from CSV
 def schemeRetrieve(path):
@@ -83,16 +115,7 @@ def field_retrieve(path):
 
 
 # Using Cohere's embed-english-v3.0 embedding model
-embeddings = CohereEmbeddings(cohere_api_key="Lqns8lzYYresnXB7QZ3Jc54zj8ri6X1Z6SDpgbZK", model="embed-english-v3.0")
-
-
-
-# For OpenAI's gpt-3.5-turbo llm
-# llm = ChatOpenAI(temperature=0, model="gpt-3.5-turbo", openai_api_key="AIzaSyCcw80TULxH1WieGfYMlDpBWyg8B4LPoDU")
-
-# For Cohere's command-r llm
-llm = ChatCohere(temperature=1, cohere_api_key="Lqns8lzYYresnXB7QZ3Jc54zj8ri6X1Z6SDpgbZK", model="command-r")
-
+embeddings = CohereEmbeddings(cohere_api_key=COHERE_API_KEY, model="embed-english-v3.0")
 
 # For reading PDFs and returning text string
 def read_pdf(files):
